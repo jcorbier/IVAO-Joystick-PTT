@@ -10,6 +10,7 @@ It also includes a compatibility mode for VATSIM (xPilot), allowing it to trigge
 - **Configurable Key:** Change the simulated key if you don't use F12.
 - **VATSIM Support:** Optional mode to integrate native xPilot PTT support.
 - **Cross-Platform:** Written in Rust, designed for macOS (and easily portable to Windows/Linux).
+- **Update:** Support for Skunkcrafts Updater.
 
 ## Installation
 

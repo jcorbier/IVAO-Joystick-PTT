@@ -41,9 +41,36 @@ jobs:
           cp output/mac.xpl release_artifact/IVAO_Joystick_PTT/
           cp README.md release_artifact/IVAO_Joystick_PTT/
           cp CHANGELOG.md release_artifact/IVAO_Joystick_PTT/
+          sed -i '' "s/@VERSION@/${TAG_NAME}/" skunkcrafts_updater.cfg
+          cp skunkcrafts_updater.cfg release_artifact/IVAO_Joystick_PTT/
           cd release_artifact
           zip -r ../IVAO_Joystick_PTT-${TAG_NAME}.zip IVAO_Joystick_PTT
 
+      - name: Create Skunkcrafts Updater package
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          unzip IVAO_Joystick_PTT-${TAG_NAME}.zip
+          mv IVAO_Joystick_PTT release
+
+          echo "" > release/skunkcrafts_updater_blacklist.txt
+
+          # create crc32 checksum for all values and write to skunkcrafts_updater_whitelist.txt
+          # format is <filename>|<crc32 checksum>
+          # include subdirectories
+          find release -type f ! \( -name '*skunkcrafts_updater*' -o -path '*skunkcrafts_updater*' \) -print0 | while IFS= read -r -d '' file; do
+            checksum_hex=$(crc32 "$file")
+            # Convert hex checksum to uint32 decimal
+            checksum_decimal=$((16#$checksum_hex))
+            # Remove "release/" prefix from $file
+            modified_file="${file#release/}"
+            echo "$modified_file|$checksum_decimal" >> release/skunkcrafts_updater_whitelist.txt
+          done
+
+          git checkout -b release
+          git add release
+          git commit -m "new release - ${TAG_NAME}"
+          git push -f -u origin release
+        
       - name: Extract Release Notes
         id: extract_release_notes
         run: |
