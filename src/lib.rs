@@ -1,6 +1,8 @@
+use std::ffi::CString;
 use std::fmt;
 use xplm::command::*;
 use xplm::plugin::{Plugin, PluginInfo};
+use xplm_sys::*;
 
 macro_rules! xdebug {
     ($($arg:tt)*) => ({
@@ -25,21 +27,41 @@ impl std::error::Error for PluginError {}
 struct PttHandler {
     key: String,
     input_manager: input::InputManager,
+    xpilot_command_ref: Option<XPLMCommandRef>,
+    vatsim_compat_enabled: bool,
 }
 
 impl CommandHandler for PttHandler {
     fn command_begin(&mut self) {
-        xdebug!("Pressing {}", self.key);
-        self.input_manager.press_key(&self.key);
+        // Lazy detection
+        if self.vatsim_compat_enabled && self.xpilot_command_ref.is_none() {
+            let name_c = CString::new("xpilot/ptt").unwrap();
+            let cmd_ref = unsafe { XPLMFindCommand(name_c.as_ptr()) };
+            if !cmd_ref.is_null() {
+                xdebug!("Found xPilot command (lazy): xpilot/ptt");
+                self.xpilot_command_ref = Some(cmd_ref);
+            }
+        }
+
+        if let Some(cmd_ref) = self.xpilot_command_ref {
+            unsafe {
+                XPLMCommandBegin(cmd_ref);
+            }
+        } else {
+            self.input_manager.press_key(&self.key);
+        }
     }
 
-    fn command_continue(&mut self) {
-        // Op is held
-    }
+    fn command_continue(&mut self) {}
 
     fn command_end(&mut self) {
-        xdebug!("Releasing {}", self.key);
-        self.input_manager.release_key(&self.key);
+        if let Some(cmd_ref) = self.xpilot_command_ref {
+            unsafe {
+                XPLMCommandEnd(cmd_ref);
+            }
+        } else {
+            self.input_manager.release_key(&self.key);
+        }
     }
 }
 
@@ -55,16 +77,21 @@ impl Plugin for IvaoPttPlugin {
     fn start() -> Result<Self, Self::Error> {
         xdebug!("Starting plugin...");
         let config = config::load_config();
-        xdebug!("Loaded config with key: {}", config.key);
+        xdebug!(
+            "Loaded config with key: {}, vatsim_compat: {}",
+            config.key,
+            config.vatsim_compat
+        );
 
         let input_manager = input::InputManager::new();
 
         let handler = PttHandler {
             key: config.key.clone(),
             input_manager,
+            xpilot_command_ref: None,
+            vatsim_compat_enabled: config.vatsim_compat,
         };
 
-        // owned command
         let owned_command =
             OwnedCommand::new("ivao_ptt/push_to_talk", "IVAO Push-to-Talk", handler)
                 .map_err(|e| PluginError(format!("Creation error: {:?}", e)))?;

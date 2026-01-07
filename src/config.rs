@@ -5,12 +5,15 @@ use std::path::Path;
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Config {
     pub key: String,
+    #[serde(default)]
+    pub vatsim_compat: bool,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Config {
             key: "F12".to_string(),
+            vatsim_compat: false,
         }
     }
 }
