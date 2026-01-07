@@ -1,3 +1,5 @@
+// Copyright (c) 2026 Jeremie Corbier
+
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;

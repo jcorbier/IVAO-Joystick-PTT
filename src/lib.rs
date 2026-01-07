@@ -1,3 +1,5 @@
+// Copyright (c) 2026 Jeremie Corbier
+
 use std::ffi::CString;
 use std::fmt;
 use xplm::command::*;

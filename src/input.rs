@@ -1,3 +1,5 @@
+// Copyright (c) 2026 Jeremie Corbier
+
 use enigo::{Direction, Enigo, Key, Keyboard, Settings};
 
 pub struct InputManager {
