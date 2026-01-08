@@ -9,15 +9,21 @@ It also includes a compatibility mode for VATSIM (xPilot), allowing it to trigge
 - **Joystick Integration:** Map any joystick button to the "IVAO Push-to-Talk" command in X-Plane settings.
 - **Configurable Key:** Change the simulated key if you don't use F12.
 - **VATSIM Support:** Optional mode to integrate native xPilot PTT support.
-- **Cross-Platform:** Written in Rust, designed for macOS (and easily portable to Windows/Linux).
+- **Cross-Platform:** Native support for macOS, Windows, and Linux.
 - **Update:** Support for Skunkcrafts Updater.
 
 ## Installation
 
 1.  **Download** the latest release.
-2.  **Extract** the `ivao-joystick-ptt` folder into your X-Plane plugins directory:
-    - Path: `X-Plane 12/Resources/plugins/`
-    - You should end up with: `X-Plane 12/Resources/plugins/ivao-joystick-ptt/mac_x64/ivao_joystick_ptt.xpl`
+2.  **Extract** the `IVAO_Joystick_PTT` folder into your X-Plane plugins directory
+
+### 🐧 Linux Requirements
+
+The plugin uses the `enigo` crate for input simulation, which requires `libxdo` to be installed on your system.
+
+- **Debian/Ubuntu**: `sudo apt-get install libxdo3`
+- **Arch Linux**: `sudo pacman -S xdotool` (or `libxdo`)
+- **Fedora**: `sudo dnf install libxdo`
 
 ### ⚠️ macOS Notarization Warning
 
@@ -29,7 +35,7 @@ To allow the plugin to run, you must remove the quarantine attribute.
 2.  Run the following command (replace the path with the actual path to your X-Plane folder):
 
     ```bash
-    xattr -d com.apple.quarantine "path/to/X-Plane 12/Resources/plugins/ivao-joystick-ptt/mac_x64/ivao_joystick_ptt.xpl"
+    xattr -d com.apple.quarantine "path/to/X-Plane 12/Resources/plugins/IVAO_Joystick_PTT/mac.xpl"
     ```
 
 3.  Restart X-Plane.
