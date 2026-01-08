@@ -9,8 +9,8 @@ permissions:
   contents: write
 
 jobs:
-  build-and-release:
-    name: Build and Release
+  build-mac:
+    name: Build (macOS)
     runs-on: macos-latest
     steps:
       - name: Checkout code
@@ -34,14 +34,104 @@ jobs:
             target/x86_64-apple-darwin/release/libivao_joystick_ptt.dylib \
             target/aarch64-apple-darwin/release/libivao_joystick_ptt.dylib
 
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: mac-plugin
+          path: output/mac.xpl
+
+  build-linux:
+    name: Build (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxdo-dev
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Prepare Artifact
+        run: |
+          mkdir -p output
+          cp target/release/libivao_joystick_ptt.so output/lin.xpl
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: linux-plugin
+          path: output/lin.xpl
+
+  build-windows:
+    name: Build (Windows)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Prepare Artifact
+        run: |
+          mkdir output
+          copy target\release\ivao_joystick_ptt.dll output\win.xpl
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: windows-plugin
+          path: output/win.xpl
+
+  release:
+    name: Release
+    needs: [build-mac, build-linux, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libarchive-zip-perl
+
+      - name: Download macOS Artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: mac-plugin
+          path: release_artifact/IVAO_Joystick_PTT
+
+      - name: Download Linux Artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: linux-plugin
+          path: release_artifact/IVAO_Joystick_PTT
+
+      - name: Download Windows Artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: windows-plugin
+          path: release_artifact/IVAO_Joystick_PTT
+
       - name: Prepare Release Archive
         run: |
           TAG_NAME=${GITHUB_REF#refs/tags/}
-          mkdir -p release_artifact/IVAO_Joystick_PTT
-          cp output/mac.xpl release_artifact/IVAO_Joystick_PTT/
           cp README.md release_artifact/IVAO_Joystick_PTT/
           cp CHANGELOG.md release_artifact/IVAO_Joystick_PTT/
-          sed -i '' "s/@VERSION@/${TAG_NAME}/" skunkcrafts_updater.cfg
+          sed -i "s/@VERSION@/${TAG_NAME}/" skunkcrafts_updater.cfg
           cp skunkcrafts_updater.cfg release_artifact/IVAO_Joystick_PTT/
           cd release_artifact
           zip -r ../IVAO_Joystick_PTT-${TAG_NAME}.zip IVAO_Joystick_PTT
@@ -66,6 +156,8 @@ jobs:
             echo "$modified_file|$checksum_decimal" >> release/skunkcrafts_updater_whitelist.txt
           done
 
+          git config --global user.name "GH Release"
+          git config --global user.email "release@cyberpatate.fr"
           git checkout -b release
           git add release
           git commit -m "new release - ${TAG_NAME}"
